@@ -774,13 +774,20 @@ textarea.field { min-height: 70px; resize: vertical; font-family: var(--ff-body)
 }
 
 :focus-visible { outline: 2px solid var(--or-eclipse); outline-offset: 2px; }
+
+/* ── Skeleton Loader ─────────────────────────── */
+.skeleton{background:linear-gradient(90deg,rgba(0,255,157,.07) 25%,rgba(0,255,157,.15) 50%,rgba(0,255,157,.07) 75%);background-size:200% 100%;animation:skel-wave 1.4s infinite;border-radius:6px;min-height:1em}
+@keyframes skel-wave{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
 </style>
   <meta property="og:title" content="Les Annales Akashiques | Studio Niko Design">
   <meta property="og:description" content="Oracle akashique — numérologie pythagoricienne, nœuds lunaires, journal AES-256-GCM">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#a78bfa">
 </head>
-<body>
+<body role="application" aria-label="Les Annales Akashiques — Oracle akashique">
+<main id="app" tabindex="-1">
+
 
 <div class="cosmos"></div>
 <div class="stars"></div>
@@ -1938,5 +1945,24 @@ else init();
 
 </script>
 
+
+</main>
+
+<script>
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const swCode = `
+const CACHE='niko-v1';
+const ASSETS=['./','/index.html'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
+self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
+    `;
+    const blob = new Blob([swCode],{type:'text/javascript'});
+    const swURL = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swURL).catch(()=>{});
+  });
+}
+</script>
 </body>
 </html>
