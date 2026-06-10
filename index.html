@@ -1245,6 +1245,17 @@ textarea.field { min-height: 70px; resize: vertical; font-family: var(--ff-body)
   <div class="coda-sig">Studio Niko Design · La Meilleraye-de-Bretagne · MMXXVI</div>
 </div>
 
+<script>/* Studio Niko · helpers vague C */
+window.safeStorage = window.safeStorage || (function(){var mem=new Map(),ls=null;try{ls=window.localStorage;var t='__niko__';ls.setItem(t,'1');ls.removeItem(t);}catch(e){ls=null;}
+return{getItem:function(k){try{return ls?ls.getItem(k):(mem.has(k)?mem.get(k):null);}catch(e){return mem.has(k)?mem.get(k):null;}},
+setItem:function(k,v){try{if(ls){ls.setItem(k,String(v));return;}}catch(e){}mem.set(k,String(v));},
+removeItem:function(k){try{if(ls)ls.removeItem(k);}catch(e){}mem.delete(k);},
+clear:function(){try{if(ls)ls.clear();}catch(e){}mem.clear();},
+key:function(i){try{if(ls)return ls.key(i);}catch(e){}var a=Array.from(mem.keys());return i<a.length?a[i]:null;},
+get length(){try{if(ls)return ls.length;}catch(e){}return mem.size;}};})();
+window.nikoFetch = window.nikoFetch || function(url,opts){function xhr(){opts=opts||{};return new Promise(function(res,rej){var x=new XMLHttpRequest();x.open((opts.method||'GET'),url,true);if(opts.headers){Object.keys(opts.headers).forEach(function(h){try{x.setRequestHeader(h,opts.headers[h]);}catch(e){}});}x.onload=function(){res({ok:x.status>=200&&x.status<300,status:x.status,statusText:x.statusText,url:url,text:function(){return Promise.resolve(x.responseText);},json:function(){return Promise.resolve(JSON.parse(x.responseText));},headers:{get:function(n){return x.getResponseHeader(n);}}});};x.onerror=function(){rej(new TypeError('Network request failed'));};x.send(opts.body||null);});}
+if(window.fetch){return window.fetch(url,opts).catch(function(){return xhr();});}return xhr();};
+</script>
 <script>
 
 /* ── AbortController + Retry + Debounce — Studio Niko Design ── */
@@ -1538,8 +1549,8 @@ async function typeOutSection(container, text) {
 }
 
 // ═══════ JOURNAL ═══════
-function loadJournal() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; } }
-function saveJournal(entries) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); return true; } catch (e) { return false; } }
+function loadJournal() { try { return JSON.parse(safeStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; } }
+function saveJournal(entries) { try { safeStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); return true; } catch (e) { return false; } }
 
 function addToJournal(reading, formData) {
   const entries = loadJournal();
@@ -1692,14 +1703,14 @@ let voiceUnlocked = false;
 
 function loadDialogue() {
   try {
-    const raw = localStorage.getItem(STORAGE_DIALOGUE);
+    const raw = safeStorage.getItem(STORAGE_DIALOGUE);
     if (!raw) return;
     dialogueHistory = JSON.parse(raw) || [];
     renderDialogue();
   } catch (e) {}
 }
 function saveDialogue() {
-  try { localStorage.setItem(STORAGE_DIALOGUE, JSON.stringify(dialogueHistory.slice(-30))); } catch (e) {}
+  try { safeStorage.setItem(STORAGE_DIALOGUE, JSON.stringify(dialogueHistory.slice(-30))); } catch (e) {}
 }
 
 function renderDialogue() {
@@ -1729,15 +1740,15 @@ function formatGuideText(text) {
 
 // MISTRAL KEY MODAL
 $('#guideKeyBtn').addEventListener('click', () => {
-  $('#mistralKey').value = localStorage.getItem(STORAGE_MISTRAL) || '';
+  $('#mistralKey').value = safeStorage.getItem(STORAGE_MISTRAL) || '';
   $('#settingsModal').classList.add('active');
   setTimeout(() => $('#mistralKey').focus(), 200);
 });
 $('#settingsCancel').addEventListener('click', () => $('#settingsModal').classList.remove('active'));
 $('#settingsSave').addEventListener('click', () => {
   const k = sanitizeKey($('#mistralKey').value);
-  if (k) localStorage.setItem(STORAGE_MISTRAL, k);
-  else localStorage.removeItem(STORAGE_MISTRAL);
+  if (k) safeStorage.setItem(STORAGE_MISTRAL, k);
+  else safeStorage.removeItem(STORAGE_MISTRAL);
   $('#settingsModal').classList.remove('active');
   $('#guideStatus').textContent = k ? 'Présence éveillée' : 'Clé requise';
 });
@@ -1790,7 +1801,7 @@ function speakGuide(text) {
 
 // MISTRAL STREAMING CALL
 async function callMistralStream(messages, onChunk) {
-  const apiKey = localStorage.getItem(STORAGE_MISTRAL);
+  const apiKey = safeStorage.getItem(STORAGE_MISTRAL);
   if (!apiKey) throw new Error('NO_KEY');
 
   const res = await fetch(MISTRAL_API, {
@@ -1964,11 +1975,11 @@ const draftFields = ['#f-prenom','#f-nom','#f-date','#f-heure','#f-lieu','#f-que
 function saveDraft() {
   const draft = {};
   draftFields.forEach(s => { if ($(s)) draft[s] = $(s).value; });
-  try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify(draft)); } catch(e) {}
+  try { safeStorage.setItem(STORAGE_DRAFT, JSON.stringify(draft)); } catch(e) {}
 }
 function loadDraft() {
   try {
-    const raw = localStorage.getItem(STORAGE_DRAFT); if (!raw) return;
+    const raw = safeStorage.getItem(STORAGE_DRAFT); if (!raw) return;
     const draft = JSON.parse(raw);
     Object.entries(draft).forEach(([s, v]) => { if ($(s)) $(s).value = v; });
     updateSoulNumbersLive();
@@ -1994,7 +2005,7 @@ function init() {
     else if (!document.hidden && window.speechSynthesis) window.speechSynthesis.resume();
   });
   // Initial guide status
-  const hasKey = !!localStorage.getItem(STORAGE_MISTRAL);
+  const hasKey = !!safeStorage.getItem(STORAGE_MISTRAL);
   $('#guideStatus').textContent = hasKey ? 'Présence éveillée' : 'Clé requise';
   console.log('%c✦ CODEX AKASHIQUE ✦', 'color:#d4af37;font-size:18px;font-family:serif;letter-spacing:0.3em');
   console.log('%cOracle-Guide · Mistral Medium 3.5 · Studio Niko Design', 'color:#8b6dd6;font-style:italic');
